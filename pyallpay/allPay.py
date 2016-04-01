@@ -8,10 +8,12 @@ from utilities import do_str_replace
 '''
     Configure your personal setting in setting.py
 '''
-from setting import HASH_IV, HASH_KEY
-from setting import AIO_SANDBOX_SERVICE_URL, AIO_SERVICE_URL, RETURN_URL, CLIENT_BACK_URL, PAYMENT_INFO_URL
-from setting import MERCHANT_ID
+#from setting import HASH_IV, HASH_KEY
+#from setting import AIO_SANDBOX_SERVICE_URL, AIO_SERVICE_URL, RETURN_URL, CLIENT_BACK_URL, PAYMENT_INFO_URL
+#from setting import MERCHANT_ID
 from setting import ALLPAY_SANDBOX
+from plone import api
+from Products.CMFPlone.utils import safe_unicode
 
 
 class AllPay():
@@ -23,12 +25,13 @@ class AllPay():
 
         # === BASIC CONFIG FOR ALLPAY ===
         self.service_method = service_method
-        self.HASH_KEY = HASH_KEY
-        self.HASH_IV = HASH_IV
-        self.service_url = AIO_SANDBOX_SERVICE_URL if self.is_sandbox else AIO_SERVICE_URL
+        self.HASH_KEY = api.portal.get_registry_record('i8d.content.browser.coverSetting.ICoverSetting.checkoutHashKey')
+        self.HASH_IV = api.portal.get_registry_record('i8d.content.browser.coverSetting.ICoverSetting.checkoutHashIV')
+#        self.service_url = AIO_SANDBOX_SERVICE_URL if self.is_sandbox else AIO_SERVICE_URL
+        self.service_url = api.portal.get_registry_record('i8d.content.browser.coverSetting.ICoverSetting.aioCheckoutURL')
 
-        self.url_dict['MerchantID'] = MERCHANT_ID
-        self.url_dict['ReturnURL'] = RETURN_URL
+        self.url_dict['MerchantID'] = api.portal.get_registry_record('i8d.content.browser.coverSetting.ICoverSetting.merchantID')
+        self.url_dict['ReturnURL'] = api.portal.get_registry_record('i8d.content.browser.coverSetting.ICoverSetting.returnURL')
 
         self.url_dict['MerchantTradeNo'] = hashlib.sha224(str(datetime.datetime.now())).hexdigest().upper() if not ('MerchantTradeNo' in payment_conf) else payment_conf['MerchantTradeNo']
         self.url_dict['PaymentType'] = 'aio'
@@ -43,6 +46,7 @@ class AllPay():
         self.url_dict['ChooseSubPayment'] = '' if not ('ChooseSubPayment' in payment_conf) else payment_conf['ChooseSubPayment']
         self.url_dict['OrderResultURL'] = CLIENT_BACK_URL if not ('ClientBackURL' in payment_conf) else payment_conf['ClientBackURL']
         self.url_dict['ClientBackURL'] = CLIENT_BACK_URL if not ('ClientBackURL' in payment_conf) else payment_conf['ClientBackURL']
+        self.url_dict['PaymentInfoURL'] = PAYMENT_INFO_URL if not ('PaymentInfoURL' in payment_conf) else payment_conf['PaymentInfoURL']
 
         if self.url_dict['ChoosePayment'] == 'ATM':
             self.url_dict['ExpireDate'] = '' if not ('ExpireDate' in payment_conf) else payment_conf['ExpireDate']
@@ -127,7 +131,7 @@ class AllPay():
 
         for i, val in enumerate(dict_url):
             print val, dict_url[val]
-            form_html = "".join((form_html, "<input type='hidden' name='%s' value='%s' />" % (val, dict_url[val])))
+            form_html = "".join((form_html, "<input type='hidden' name='%s' value='%s' />" % (safe_unicode(val), safe_unicode(dict_url[val]))))
 
         form_html = "".join((form_html, '<input type="submit" class="large" id="payment-btn" value="BUY" /></form>'))
         if auto_send:
